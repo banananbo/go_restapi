@@ -5,7 +5,8 @@ import (
     "myapi/internal/repository"
     "myapi/internal/infrastructure"
     "myapi/internal/config"
-    "database/sql"
+    "gorm.io/driver/mysql"
+	"gorm.io/gorm"
     "fmt"
     "log"
     _ "github.com/go-sql-driver/mysql"
@@ -27,18 +28,10 @@ func main() {
     mysqlCfg.Database,
     )
 
-	// MySQLデータベースに接続
-	db, err := sql.Open("mysql", dsn)
+	// GORMでのDB接続
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
-		fmt.Println("データベース接続エラー:", err)
-		return
-	}
-
-	// データベース接続を確認
-	err = db.Ping()
-	if err != nil {
-		fmt.Println("データベース接続エラー:", err)
-		return
+		log.Fatalf("Failed to connect to database: %s", err)
 	}
 
 	// NewMySQLRepositoryを呼び出してMySQLリポジトリを作成
@@ -51,5 +44,9 @@ func main() {
 	router := infrastructure.SetupRouter(userUseCase)         // Ginのルーティングをセットアップ
 
 	router.Run(":8080")
+
+    // DB接続をクローズする
+    sqlDB, _ := db.DB()
+    defer sqlDB.Close()
 }
 
